@@ -38,8 +38,8 @@ async function createChart(){
     }
     const q = query(collection(db, "patients/" + patients[targ] + "/schedule"), where("completed", "!=", false))
     const querySnapshot = await getDocs(q);
+    let count = 1;
     querySnapshot.forEach((doc) => { 
-            let count = 1;
             dataArr.push(doc.data()["reps"])
             labelArr.push(count)
             count++
@@ -166,7 +166,7 @@ dashboardBut.addEventListener("click", async function(){
             console.log(doc.data())
             reps += doc.data()["reps"]
             elapsed += doc.data()["duration"]
-            repsByPatient[patients[i]] += reps
+            repsByPatient[patients[i]] += doc.data()["reps"]
             // let stats = doc.data()["stats"]
             // console.log(stats)
             // repsByPatient[doc.data()["name"]] = 0;

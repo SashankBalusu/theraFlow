@@ -137,7 +137,16 @@
   font-weight: bold;
   font-size: 1.1em;
 }
-
+.qr-code-container {
+  position: absolute;
+  right: 10%;
+  bottom: 26%;
+}
+.qr-code > img {
+  display: block;
+  border-radius: 10px;
+  border: solid 10px black
+}
 .content-table th,
 .content-table td {
   padding: 12px 15px;

@@ -121,7 +121,7 @@ const firebaseConfig = {
     appId: "1:654850056739:web:39ba1ec0a5f4c14c920796",
     measurementId: "G-JQ48XH19CT"
 };
-
+let used = false
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 let displayName = localStorage.getItem("displayName")
@@ -131,6 +131,7 @@ document.getElementById("profSide").src = photoURL.substring(1, photoURL.length-
 document.getElementById("userTop").textContent = displayName.substring(1, displayName.length-1);
 document.getElementById("profTop").src = photoURL.substring(1, photoURL.length-1);
 const dashboardBut = document.getElementById("dashboardBut")
+let qr_code_element = document.querySelector(".qr-code");
 
 dashboardBut.addEventListener("click", async function(){
     hideAll()
@@ -252,17 +253,35 @@ profileBut.addEventListener("click", async function(){
     document.getElementById("email").textContent = "Email: " + localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1);
     document.getElementById("emailVerified").textContent = "Email Verified? " + localStorage.getItem("emailVerified")
     document.getElementById("id").textContent = "Therapist ID: " + dat["id"]
-    let phoneNumber = localStorage.getItem("phoneNumber") == null ? 0 :  localStorage.getItem("phoneNumber")
+    let phoneNumber = localStorage.getItem("phoneNumber") == "null" ? "n/a" :  localStorage.getItem("phoneNumber")
     document.getElementById("phoneNumber").textContent = "Phone Number: " + phoneNumber
-    document.getElementById("creationTime").textContent = "Creation Time: " + localStorage.getItem("creationTime")
-    document.getElementById("lastSignInTime").textContent = "Last Sign in Time:  " + localStorage.getItem("lastSignInTime")
-
-
+    document.getElementById("creationTime").textContent = "Creation Time: " + localStorage.getItem("creationTime").substring(1, localStorage.getItem("creationTime").length - 14)
+    document.getElementById("lastSignInTime").textContent = "Last Sign in Time:  " + localStorage.getItem("lastSignInTime").substring(1, localStorage.getItem("lastSignInTime").length - 14)
+    generate(localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1))
+    used = true
 
 
 
 
 })
+function generate(user_input) {
+    if (used == false){
+        qr_code_element.style = "";
+
+        var qrcode = new QRCode(qr_code_element, {
+            text: `${user_input}`,
+            width: 180, //128
+            height: 180,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+    
+
+
+  }
+  
 
 const manageBut = document.getElementById("manageBut")
 manageBut.addEventListener("click", async function(){
@@ -350,7 +369,6 @@ const calendarBut = document.getElementById("calendarBut")
 calendarBut.addEventListener("click", async function(){
     hideAll()
     const calendarCon = document.getElementById("calendarCon")
-    deleteAllChildNodes(calendarCon)
     const nameCurrCalendar = document.getElementById("nameCurrCalendar")
     const moveLeftCalendar = document.getElementById("moveLeftCalendar")
     const moveRightCalendar = document.getElementById("moveRightCalendar")
@@ -373,6 +391,8 @@ calendarBut.addEventListener("click", async function(){
     let counter = 0
     const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), orderBy("date", "asc"));
     const querySnapshot = await getDocs(q)
+    console.log(currInd)
+    deleteAllChildNodes(calendarCon)
     querySnapshot.forEach((doc) => { 
         console.log(doc.data())
         if (doc.data()["completed"] == false && counter < 6){
@@ -397,6 +417,9 @@ calendarBut.addEventListener("click", async function(){
             div.classList.add("event")
             calendarCon.appendChild(div)
             counter++
+            if (counter > 6){
+                return
+            }
         }
     })
     if (counter == 0){
@@ -409,24 +432,25 @@ calendarBut.addEventListener("click", async function(){
         calendarCon.appendChild(div)
     }
     moveLeftCalendar.addEventListener("click", async function(){
-        deleteAllChildNodes(calendarCon)
         if (currInd == 0){
             currInd = patients.length - 1
         }
         else {
             currInd --
         }
+        console.log(currInd)
         nameCurrCalendar.textContent = patients[currInd]
         // let h4 = document.createElement("h4")
         // h4.setAttribute("style", "margin-top: 20px;")
         // h4.textContent = patients[currInd]
         // calendarCon.appendChild(h4)
-        let counter = 0
+        let counterIn = 0
         const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), orderBy("date", "asc"));
         const querySnapshot = await getDocs(q)
+        deleteAllChildNodes(calendarCon)
         querySnapshot.forEach((doc) => { 
             console.log(doc.data())
-            if (doc.data()["completed"] == false && counter < 6){
+            if (doc.data()["completed"] == false && counterIn < 6){
                 let div = document.createElement("div")
                 let h5 = document.createElement("h5")
                 h5.setAttribute("style", "display: inline-block; margin-right: 5%")
@@ -447,10 +471,13 @@ calendarBut.addEventListener("click", async function(){
                 div.appendChild(h53)
                 div.classList.add("event")
                 calendarCon.appendChild(div)
-                counter++
+                counterIn++
+            }
+            if (counterIn == 6){
+                return
             }
         })
-        if (counter == 0){
+        if (counterIn == 0){
             let div = document.createElement("div")
             let h5 = document.createElement("h5")
             h5.textContent = "No upcoming events."
@@ -461,24 +488,26 @@ calendarBut.addEventListener("click", async function(){
         }
     })
     moveRightCalendar.addEventListener("click", async function(){
-        deleteAllChildNodes(calendarCon)
         if (currInd == patients.length-1){
             currInd = 0
         }
         else {
             currInd++
         }
+        console.log(currInd)
+
         nameCurrCalendar.textContent = patients[currInd]
         // let h4 = document.createElement("h4")
         // h4.setAttribute("style", "margin-top: 20px;")
         // h4.textContent = patients[currInd]
         // calendarCon.appendChild(h4)
-        let counter = 0
+        let counterIn = 0
         const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), orderBy("date", "asc"));
         const querySnapshot = await getDocs(q)
+        deleteAllChildNodes(calendarCon)
         querySnapshot.forEach((doc) => { 
             console.log(doc.data())
-            if (doc.data()["completed"] == false && counter < 6){
+            if (doc.data()["completed"] == false && counterIn < 6){
                 let div = document.createElement("div")
                 let h5 = document.createElement("h5")
                 h5.setAttribute("style", "display: inline-block; margin-right: 5%")
@@ -499,10 +528,13 @@ calendarBut.addEventListener("click", async function(){
                 div.appendChild(h53)
                 div.classList.add("event")
                 calendarCon.appendChild(div)
-                counter++
+                counterIn++
+            }
+            if (counterIn == 6){
+                return
             }
         })
-        if (counter == 0){
+        if (counterIn == 0){
             let div = document.createElement("div")
             let h5 = document.createElement("h5")
             h5.textContent = "No upcoming events."
@@ -515,4 +547,10 @@ calendarBut.addEventListener("click", async function(){
     })
     
     
+})
+
+const analyzeBut = document.getElementById("analyzeBut")
+analyzeBut.addEventListener("click", function(){
+    hideAll()
+    document.getElementById("analyze").setAttribute("style", "display: block")
 })

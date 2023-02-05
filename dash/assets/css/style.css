@@ -50,7 +50,11 @@
 /*-------------------------------------------------------------------*/
 /* === SCSS Compass Functions === */
 
-
+#myvid {
+  display: block;
+  margin: 0 auto;
+  margin-top: 5%;
+}
 .event {
   background: linear-gradient(to right, #da8cff, #9a55ff) !important;
   color: white;

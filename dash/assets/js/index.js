@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-analytics.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection , orderBy, query} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"; 
+import { getFirestore, doc, getDoc, getDocs, collection , orderBy, query, where} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"; 
+import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+
 function hideAll(){
     const mainPanel = document.getElementsByClassName("main-panel")
     for (let i = 0; i < mainPanel.length;i++){
@@ -16,25 +16,36 @@ function deleteAllChildNodes(parent){
 async function createChart(){
     const nameCurrPatient = document.getElementById("nameCurrPatient").textContent
     const db = getFirestore(app);  
+    const docRef = doc(db, "therapists", localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1));
+    const docSnap = await getDoc(docRef);
+    let dat = docSnap.data()
+    let patients = []
+    for (let key in dat["patientIDs"]){
+        patients.push(dat["patientIDs"][key])
+    }
     // const docRef = doc(db, "therapists", localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1));
     // const docSnap = await getDoc(docRef);
     // let dat = docSnap.data()
     // let patientEmailToName = {}
     let dataArr = []
     let labelArr = []
-    const querySnapshot = await getDocs(collection(db, "patients"));
-    querySnapshot.forEach((doc) => { 
-        if (doc.data()["name"] == nameCurrPatient){
-            let count = 1;
-            for (let key in doc.data()["stats"]){
-                console.log(doc.data()["stats"])
-                dataArr.push(doc.data()["stats"][key]["reps"])
-                labelArr.push(count)
-                count++
-            }
+    let targ
+    for (let i = 0; i < patients.length; i++){
+        if (nameCurrPatient == patients[i]){
+            targ = i
+            break
         }
+    }
+    const q = query(collection(db, "patients/" + patients[targ] + "/schedule"), where("completed", "!=", false))
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => { 
+            let count = 1;
+            dataArr.push(doc.data()["reps"])
+            labelArr.push(count)
+            count++
         
     })
+    console.log(dataArr)
     var chart    = document.getElementById('chart').getContext('2d'),
     gradient = chart.createLinearGradient(0, 0, 0, 450);
 
@@ -142,20 +153,33 @@ dashboardBut.addEventListener("click", async function(){
     const docRef = doc(db, "therapists", localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1));
     const docSnap = await getDoc(docRef);
     let dat = docSnap.data()
+    let patients = []
+    for (let key in dat["patientIDs"]){
+        patients.push(dat["patientIDs"][key])
+    }
     
-    const querySnapshot = await getDocs(collection(db, "patients"));
-    querySnapshot.forEach((doc) => {
-        let stats = doc.data()["stats"]
-        console.log(stats)
-        repsByPatient[doc.data()["name"]] = 0;
-        for (let key in stats){
-            repsByPatient[doc.data()["name"]] += stats[key]["reps"]
-            reps += stats[key]["reps"]
-            elapsed += stats[key]["endDate"]["seconds"] - stats[key]["startDate"]["seconds"]
-        }
-        // doc.data() is never undefined for query doc snapshots
-        //console.log(doc.id, " => ", doc.data());
-      });
+    for (let i = 0; i < patients.length;i++){
+        const q = query(collection(db, "patients/" + patients[i] + "/schedule"), where("completed", "!=", false))
+        const querySnapshot = await getDocs(q);
+        repsByPatient[patients[i]] = 0
+        querySnapshot.forEach((doc) => {
+            console.log(doc.data())
+            reps += doc.data()["reps"]
+            elapsed += doc.data()["duration"]
+            repsByPatient[patients[i]] += reps
+            // let stats = doc.data()["stats"]
+            // console.log(stats)
+            // repsByPatient[doc.data()["name"]] = 0;
+            // for (let key in stats){
+            //     repsByPatient[doc.data()["name"]] += stats[key]["reps"]
+            //     reps += stats[key]["reps"]
+            //     elapsed += stats[key]["endDate"]["seconds"] - stats[key]["startDate"]["seconds"]
+            // }
+            // doc.data() is never undefined for query doc snapshots
+            //console.log(doc.id, " => ", doc.data());
+          });
+    }
+    
     console.log(repsByPatient)
     const dashboard = document.getElementById("dashboard")
     dashboard.setAttribute("style", "display: block")
@@ -280,7 +304,7 @@ function generate(user_input) {
     
 
 
-  }
+}
   
 
 const manageBut = document.getElementById("manageBut")
@@ -341,7 +365,7 @@ dataBut.addEventListener("click", async function(){
         patientEmailToName[doc.id] = doc.data()["name"]
     })
     let currInd = 0
-    nameCurrPatient.textContent = patientEmailToName[patients[currInd]]
+    nameCurrPatient.textContent = patients[currInd]
     createChart()
     moveLeftData.addEventListener("click", function(){
         if (currInd == 0){
@@ -350,7 +374,7 @@ dataBut.addEventListener("click", async function(){
         else {
             currInd --
         }
-        nameCurrPatient.textContent = patientEmailToName[patients[currInd]]
+        nameCurrPatient.textContent = patients[currInd]
         createChart()
     })
     moveRightData.addEventListener("click", function(){
@@ -360,7 +384,7 @@ dataBut.addEventListener("click", async function(){
         else {
             currInd++
         }
-        nameCurrPatient.textContent = patientEmailToName[patients[currInd]]
+        nameCurrPatient.textContent = patients[currInd]
         createChart()
     })
 })
@@ -550,7 +574,241 @@ calendarBut.addEventListener("click", async function(){
 })
 
 const analyzeBut = document.getElementById("analyzeBut")
-analyzeBut.addEventListener("click", function(){
+analyzeBut.addEventListener("click", async function(){
     hideAll()
     document.getElementById("analyze").setAttribute("style", "display: block")
+    const analyzeCon = document.getElementById("analyzeCon")
+    const nameCurrAnalyze = document.getElementById("nameCurrAnalyze")
+    const moveLeftAnalyze = document.getElementById("moveLeftAnalyze")
+    const moveRightAnalyze = document.getElementById("moveRightAnalyze")
+    //deleteAllChildNodes(analyzeCon)
+    const db = getFirestore(app);  
+    const docRef = doc(db, "therapists", localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1));
+    const docSnap = await getDoc(docRef);
+    let dat = docSnap.data()
+    let patients = []
+    for (let key in dat["patientIDs"]){
+        patients.push(dat["patientIDs"][key])
+    }
+    console.log(patients)
+    let currInd = 0
+    nameCurrAnalyze.textContent = patients[currInd]
+    const appendTo = document.getElementById("appendTo")
+    const appendToTwo = document.getElementById("appendToTwo")
+    const notes = document.getElementById("notes")
+    
+
+    let counter = 0
+    
+    const querySnapshot = await getDocs(collection(db, "patients/" + patients[currInd] + "/textUpdates"))
+    deleteAllChildNodes(appendTo)
+    deleteAllChildNodes(appendToTwo)
+    deleteAllChildNodes(notes)
+    querySnapshot.forEach((doc) => { 
+        console.log(doc.data())
+        for (let i = 0; i < doc.data()["anatomy"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["anatomy"][i]
+            appendTo.appendChild(h2)
+        }
+        for (let i = 0; i <  doc.data()["symptoms"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["symptoms"][i]
+            appendToTwo.appendChild(h2)
+
+        }
+        notes.textContent = doc.data()["text"]
+        
+        counter++
+    })
+    if (counter == 0){
+        let h2 = document.createElement("h2")
+        h2.textContent = "N/A"
+        let h22 = document.createElement("h2")
+        h22.textContent = "N/A"
+        let h23 = document.createElement("h2")
+        h23.textContent = "N/A"
+        appendTo.appendChild(h2)
+        appendToTwo.appendChild(h22)
+        notes.appendChild(h23)
+
+    }
+    moveLeftAnalyze.addEventListener("click", async function(){
+        if (currInd == 0){
+            currInd = patients.length - 1
+        }
+        else {
+            currInd --
+        }
+        nameCurrAnalyze.textContent = patients[currInd]
+        
+
+    let counter = 0
+    const querySnapshot = await getDocs(collection(db, "patients/" + patients[currInd] + "/textUpdates"))
+    deleteAllChildNodes(appendTo)
+    deleteAllChildNodes(appendToTwo)
+    deleteAllChildNodes(notes)
+    querySnapshot.forEach((doc) => { 
+        console.log(doc.data())
+        for (let i = 0; i < doc.data()["anatomy"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["anatomy"][i]
+            appendTo.appendChild(h2)
+        }
+        for (let i = 0; i <  doc.data()["symptoms"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["symptoms"][i]
+            appendToTwo.appendChild(h2)
+
+        }
+        notes.textContent = doc.data()["text"]
+        
+        counter++
+    })
+    if (counter == 0){
+        let h2 = document.createElement("h2")
+        h2.textContent = "N/A"
+        let h22 = document.createElement("h2")
+        h22.textContent = "N/A"
+        let h23 = document.createElement("h2")
+        h23.textContent = "N/A"
+        appendTo.appendChild(h2)
+        appendToTwo.appendChild(h22)
+        notes.appendChild(h23)
+
+    }
+    })
+    moveRightAnalyze.addEventListener("click", async function(){
+        if (currInd == patients.length-1){
+            currInd = 0
+        }
+        else {
+            currInd++
+        }
+        nameCurrAnalyze.textContent = patients[currInd]
+        
+
+    let counter = 0
+    const querySnapshot = await getDocs(collection(db, "patients/" + patients[currInd] + "/textUpdates"))
+    deleteAllChildNodes(appendTo)
+    deleteAllChildNodes(appendToTwo)
+    deleteAllChildNodes(notes)
+    querySnapshot.forEach((doc) => { 
+        console.log(doc.data())
+        for (let i = 0; i < doc.data()["anatomy"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["anatomy"][i]
+            appendTo.appendChild(h2)
+        }
+        for (let i = 0; i <  doc.data()["symptoms"].length; i++){
+            let h2 = document.createElement("h2")
+            h2.textContent = "- " + doc.data()["symptoms"][i]
+            appendToTwo.appendChild(h2)
+
+        }
+        notes.textContent = doc.data()["text"]
+        
+        counter++
+    })
+    if (counter == 0){
+        let h2 = document.createElement("h2")
+        h2.textContent = "N/A"
+        let h22 = document.createElement("h2")
+        h22.textContent = "N/A"
+        let h23 = document.createElement("h2")
+        h23.textContent = "N/A"
+        appendTo.appendChild(h2)
+        appendToTwo.appendChild(h22)
+        notes.appendChild(h23)
+
+    }
+    })
+})
+
+const watchBut = document.getElementById("watchBut")
+watchBut.addEventListener("click", async function(){
+    hideAll()
+    const storage = getStorage();
+    document.getElementById("watch").setAttribute("style", "display: block")
+    const nameCurrWatch = document.getElementById("nameCurrWatch")
+    const moveLeftWatch = document.getElementById("moveLeftWatch")
+    const moveRightWatch = document.getElementById("moveRightWatch")
+
+    const db = getFirestore(app);  
+    const docRef = doc(db, "therapists", localStorage.getItem("email").substring(1, localStorage.getItem("email").length-1));
+    const docSnap = await getDoc(docRef);
+    let dat = docSnap.data()
+    let patients = []
+    for (let key in dat["patientIDs"]){
+        patients.push(dat["patientIDs"][key])
+    }
+    let currInd = 0
+    
+    nameCurrWatch.textContent = patients[currInd]
+    const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), where("completed", "!=", false))
+    const querySnapshot = await getDocs(q);
+    let imgSrc
+    querySnapshot.forEach((doc) => {
+        imgSrc = doc.id
+        return
+    })
+    if (imgSrc){
+        getDownloadURL(ref(storage, imgSrc))
+        .then((url) => {
+    
+            const video = document.getElementById('myvid');
+            video.setAttribute('src', url);
+        })
+    }
+    
+    moveLeftWatch.addEventListener("click", async function(){
+        if (currInd == 0){
+            currInd = patients.length - 1
+        }
+        else {
+            currInd --
+        }
+        nameCurrWatch.textContent = patients[currInd]
+        const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), where("completed", "!=", false))
+        const querySnapshot = await getDocs(q);
+        let imgSrc
+        querySnapshot.forEach((doc) => {
+            imgSrc = doc.id
+            return
+        })
+        if (imgSrc){
+            getDownloadURL(ref(storage, imgSrc))
+            .then((url) => {
+        
+                const video = document.getElementById('myvid');
+                video.setAttribute('src', url);
+            })
+        }
+        
+    })
+    moveRightWatch.addEventListener("click", async function(){
+        if (currInd == patients.length-1){
+            currInd = 0
+        }
+        else {
+            currInd++
+        }
+        nameCurrWatch.textContent = patients[currInd]
+        const q = query(collection(db, "patients/" + patients[currInd] + "/schedule"), where("completed", "!=", false))
+        const querySnapshot = await getDocs(q);
+        let imgSrc
+        querySnapshot.forEach((doc) => {
+            imgSrc = doc.id
+            return
+        })
+        if (imgSrc){
+            getDownloadURL(ref(storage, imgSrc))
+            .then((url) => {
+        
+                const video = document.getElementById('myvid');
+                video.setAttribute('src', url);
+            })
+        }
+        
+    })
 })

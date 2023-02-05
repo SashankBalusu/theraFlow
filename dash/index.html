@@ -2,6 +2,8 @@
 <html lang="en">
   <head>
     <!-- Required meta tags -->
+    <link href="assets/images/logo.jpg" rel="icon">
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Theraflow</title>
@@ -16,7 +18,6 @@
     <!-- Layout styles -->
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- End layout styles -->
-    <link rel="shortcut icon" href="assets/images/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap" rel="stylesheet">
@@ -90,6 +91,10 @@
               <a class="nav-link" id = "dataBut">
                 <span class="menu-title">Data</span>
                 <i class="mdi mdi-chart-donut menu-icon"></i>
+              </a>
+              <a class="nav-link" id = "watchBut">
+                <span class="menu-title">Watch</span>
+                <i class="mdi mdi-clock menu-icon"></i>
               </a>
             </li>
                 </ul>
@@ -297,7 +302,76 @@
                   <i class="mdi mdi-google-analytics"></i>
                 </span> Analyze 
               </h3>
+              <div id = "analyzeContentHead" style = "text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                <button style = "border: none" id = "moveLeftAnalyze">
+                  ◄
+                </button>
+                <h4 style = "display: inline-block; margin-left: 10px; margin-right: 10px" id = "nameCurrAnalyze"></h4>
+                <button style = "border: none" id = "moveRightAnalyze">
+                  ►
+                </button>
+              </div>
+              <div id = "analyzeCon" class = "row">
+                <div class="col-md-6 stretch-card grid-margin">
+                  <div class="card bg-gradient-danger card-img-holder text-white">
+                    <div class="card-body">
+                      <img src="assets/images/dashboard/circle.svg" class="card-img-absolute" alt="circle-image" />
+                      <h4 class="font-weight-normal mb-3">Areas of Pain
+                      </h4>
+                      <div id = "appendTo">
 
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 stretch-card grid-margin">
+                  <div class="card bg-gradient-info card-img-holder text-white">
+                    <div class="card-body" >
+                      <img src="assets/images/dashboard/circle.svg" class="card-img-absolute" alt="circle-image" />
+                      <h4 class="font-weight-normal mb-3">Symptoms
+                      </h4>
+                      <div id = "appendToTwo">
+
+                      </div>
+                      <h2 id = "symptomDesc" class="mb-5"></h2>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-12 stretch-card grid-margin">
+                  <div class="card bg-gradient-success card-img-holder text-white">
+                    <div class="card-body">
+                      <img src="assets/images/dashboard/circle.svg" class="card-img-absolute" alt="circle-image" />
+                      <h4 class="font-weight-normal mb-3">Notes
+                      </h4>
+
+                      <h2 id = "notes" class="mb-5"></h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>          
+        </div>
+        <div id = "watch" class="main-panel">
+          <div class="content-wrapper" style = "height: 100vh">
+            <div class="page-header"style = "display: block !important">
+              <h3 class="page-title">
+                <span class="page-title-icon bg-gradient-primary text-white me-2">
+                  <i class="mdi mdi-clock"></i>
+                </span> Watch 
+              </h3>
+              <div id = "watchContentHead" style = "text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                <button style = "border: none" id = "moveLeftWatch">
+                  ◄
+                </button>
+                <h4 style = "display: inline-block; margin-left: 10px; margin-right: 10px" id = "nameCurrWatch"></h4>
+                <button style = "border: none" id = "moveRightWatch">
+                  ►
+                </button>
+              </div>
+              <div id = "watchCon">
+                <video id = "myvid" width="320" height="240" autoplay controls></video>
+              </div>
             </div>
           </div>          
         </div>
